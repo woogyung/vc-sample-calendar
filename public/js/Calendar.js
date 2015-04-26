@@ -69,6 +69,18 @@
     }
 
     // DOM Element helpers
+    function isValidDateElement (el) {
+        return el.tagName === "TD" && Number(el.textContent);
+    }
+
+    function isPrevButton (el) {
+        return el.className === "prev";
+    }
+
+    function isNextButton (el) {
+        return el.className === "next";
+    }
+
     function createElementWithClass (className) {
         var element = document.createElement("div");
         element.classList.add(className);
@@ -81,14 +93,12 @@
         return element;
     }
 
-    // Today View Constructor
-    function TodayViewUI (currentDate) {
+    // Today View UI Constructor
+    function TodayViewUI (date, day) {
         var node = createElementWithClass("today-view");
 
         function renderTemplate () {
-            var day = DAYS[currentDate.day];
-            var date = currentDate.date;
-            var template = "<div>" + day + "</div> \
+            var template = "<div>" + DAYS[day] + "</div> \
                             <h1>" + date + "</h1>";
             node.innerHTML = template;
         }
@@ -100,14 +110,12 @@
     }
 
     // Calendar View Header Constructor
-    function CalendarViewHeaderUI (currentDate) {
+    function CalendarViewHeaderUI (year, month) {
         var node = createElementWithClass("header");
 
         function renderTemplate () {
-            var month = MONTHS[currentDate.month];
-            var year = currentDate.year;
             var template = "<span class='prev'> < </span> \
-                            <span class='month-year'>" + month + " " + year + "</span> \
+                            <span class='month-year'>" + MONTHS[month] + " " + year + "</span> \
                             <span class='next'> > </span>";
             node.innerHTML = template;
         }
@@ -191,7 +199,7 @@
         var node = createElementWithClass("calendar-view");
 
         function renderHeader () {
-            var headerView = new CalendarViewHeaderUI(currentDate);
+            var headerView = new CalendarViewHeaderUI(currentDate.year, currentDate.month);
             headerView.render(node);
         }
 
@@ -228,24 +236,85 @@
             year: getCurrentYear(date)
         };
 
-        function renderTodaysView () {
-            var todayView = new TodayViewUI(currentDate);
+        function renderTodaysView (date, day) {
+            var todayView = new TodayViewUI(date, day);
             todayView.render(node);
         }
 
-        function renderCalendarView () {
-            var calendarView = new CalendarViewUI(currentDate);
+        function renderCalendarView (date) {
+            var calendarView = new CalendarViewUI(date);
             calendarView.render(node);
         }
 
-        function renderSubComponents () {
-            renderTodaysView();
-            renderCalendarView();
+        function renderSubComponents (date) {
+            renderTodaysView(currentDate.date, currentDate.day);
+            renderCalendarView(date);
+        }
+
+        function refreshTodaysView (date, day) {
+            var existingView = node.querySelector(".today-view");
+            node.removeChild(existingView);
+            renderTodaysView(date, day);
+        }
+
+        function refreshCalendarView (date) {
+            var existingView = node.querySelector(".calendar-view");
+            node.removeChild(existingView);
+            renderCalendarView(date);
+        }
+
+        function refresh (date) {
+            refreshTodaysView(date.date, date.day);
+            refreshCalendarView(date);
+        }
+
+        function getSelectedDate (date) {
+            var d = new Date(currentDate.year, currentDate.month, date);
+            currentDate.date = date;
+            currentDate.day = d.getDay();
+        }
+
+        function calculatePrevMonth () {
+            currentDate.month--;
+            if (currentDate.month < 0) {
+                currentDate.month = 11;
+                currentDate.year--;
+            }
+        }
+
+        function calculateNextMonth () {
+            currentDate.month++;
+            if (currentDate.month > 11) {
+                currentDate.month = 0;
+                currentDate.year++;
+            }
+        }
+
+        function deleteCurrentDate () {
+            currentDate.date = null;
+        }
+
+        function addCalendarEventManager () {
+            node.addEventListener("click", function (ev) {
+                if (isValidDateElement(ev.target)) {
+                    getSelectedDate(Number(ev.target.textContent));
+                    refresh(currentDate);
+                } else if (isPrevButton(ev.target)) {
+                    calculatePrevMonth();
+                    deleteCurrentDate();
+                    refreshCalendarView(currentDate);
+                } else if (isNextButton(ev.target)) {
+                    calculateNextMonth();
+                    deleteCurrentDate();
+                    refreshCalendarView(currentDate);
+                }
+            });
         }
 
         this.render = function (targetEl) {
-            renderSubComponents();
+            renderSubComponents(currentDate);
             targetEl.appendChild(node);
+            addCalendarEventManager();
         };
     }
 
