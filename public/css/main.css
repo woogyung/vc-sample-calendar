@@ -9,6 +9,7 @@ body {
     border: 2px black solid;
     height: 200px;
     width: 470px;
+    cursor: default;
 }
 
 .today-view {
@@ -67,7 +68,6 @@ body {
     font-size: 10px;
     font-weight: bold;
     text-align: center;
-    cursor: default;
 }
 
 .calendar-view td.selected {
