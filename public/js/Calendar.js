@@ -96,33 +96,52 @@
     // Today View UI Constructor
     function TodayViewUI (date, day) {
         var node = createElementWithClass("today-view");
+        var children = {
+            day: null,
+            date: null
+        };
 
         function renderTemplate () {
             var template = "<div>" + DAYS[day] + "</div> \
                             <h1>" + date + "</h1>";
             node.innerHTML = template;
+            children.day = node.querySelector("div");
+            children.date = node.querySelector("h1");
         }
 
         this.render = function (targetEl) {
             renderTemplate();
             targetEl.appendChild(node);
         };
+
+        this.update = function (date, day) {
+            children.day.innerHTML = DAYS[day];
+            children.date.innerHTML = date;
+        };
     }
 
     // Calendar View Header Constructor
     function CalendarViewHeaderUI (year, month) {
         var node = createElementWithClass("header");
+        var children = {
+            monthAndYear: null
+        };
 
         function renderTemplate () {
             var template = "<span class='prev'> < </span> \
                             <span class='month-year'>" + MONTHS[month] + " " + year + "</span> \
                             <span class='next'> > </span>";
             node.innerHTML = template;
+            children.monthAndYear = node.querySelector(".month-year");
         }
 
         this.render = function (targetEl) {
             renderTemplate();
             targetEl.appendChild(node);
+        };
+
+        this.update = function (date) {
+            children.monthAndYear.innerHTML = MONTHS[date.month] + " " + date.year;
         };
     }
 
@@ -161,12 +180,7 @@
         function addValidDateCell (template, firstDayOfMonth) {
             var lastDateOfMonth = getLastDateOfMonth(currentDate.month);
             for (var j = 1; j <= lastDateOfMonth; j++) {
-                if (j === currentDate.date) {
-                    template += ("<td class='selected'>" + j + "</td>");
-                } else {
-                    template += ("<td>" + j + "</td>");
-                }
-
+                template += ("<td>" + j + "</td>");
                 if ((firstDayOfMonth + j) % 7 === 0) {
                     template += "</tr><tr>";
                 }
@@ -174,33 +188,55 @@
             return template;
         }
 
-        function generateTemplate () {
+        function generateTemplate (firstDayOfMonth) {
             var template = "<table><tbody><tr>";
-            var firstDayOfMonth = getFirstDayOfMonth(currentDate.year, currentDate.month);
             template = addEmptyCell(template, firstDayOfMonth);
             template = addValidDateCell(template, firstDayOfMonth);
             template += "</tr></tbody></table>";
             return template;
         }
 
-        function renderTemplate () {
-            var template = generateTemplate();
+        function renderTemplate (date) {
+            var firstDayOfMonth = getFirstDayOfMonth(date.year, date.month);
+            var template = generateTemplate(firstDayOfMonth);
             node.innerHTML = template;
         }
 
         this.render = function (targetEl) {
-            renderTemplate();
+            renderTemplate(currentDate);
             targetEl.appendChild(node);
+        };
+
+        this.update = function (date) {
+            renderTemplate(date);
+        };
+
+        this.highlightSelectedDate = function (selectedDate) {
+            var prevSelectedNode = node.querySelector(".selected");
+            if (prevSelectedNode) {
+                prevSelectedNode.classList.remove("selected");
+            }
+
+            var tableDataCellElements = node.querySelectorAll("td");
+            for (var i = 0; i < tableDataCellElements.length; i++) {
+                if (Number(tableDataCellElements[i].textContent) === selectedDate) {
+                    tableDataCellElements[i].classList.add("selected");
+                }
+            }
         };
     }
 
     // Calendar View Constructor
     function CalendarViewUI (currentDate) {
         var node = createElementWithClass("calendar-view");
+        var children = {
+            header: null,
+            dates: null
+        };
 
         function renderHeader () {
-            var headerView = new CalendarViewHeaderUI(currentDate.year, currentDate.month);
-            headerView.render(node);
+            children.header = new CalendarViewHeaderUI(currentDate.year, currentDate.month);
+            children.header.render(node);
         }
 
         function renderDays () {
@@ -209,8 +245,8 @@
         }
 
         function renderDates () {
-            var calendarDatesView = new CalendarDatesViewUI(currentDate);
-            calendarDatesView.render(node);
+            children.dates = new CalendarDatesViewUI(currentDate);
+            children.dates.render(node);
         }
 
         function renderSubComponents () {
@@ -219,15 +255,36 @@
             renderDates();
         }
 
+        function updateHeader (date) {
+            children.header.update(date);
+        }
+
+        function updateDates (date) {
+            children.dates.update(date);
+        }
+
         this.render = function (targetEl) {
             renderSubComponents();
             targetEl.appendChild(node);
+        };
+
+        this.update = function (date) {
+            updateHeader(date);
+            updateDates(date);
+        };
+
+        this.highlightSelectedDate = function (selectedDate) {
+            children.dates.highlightSelectedDate(selectedDate);
         };
     }
 
     // Top Level Calendar Constructor
     function CalendarUI () {
         var node = createElementWithClass("calendar");
+        var children = {
+            todayView: null,
+            calendarView: null
+        };
         var date = new Date();
         var currentDate = {
             day: getCurrentDay(date),
@@ -237,40 +294,24 @@
         };
 
         function renderTodaysView (date, day) {
-            var todayView = new TodayViewUI(date, day);
-            todayView.render(node);
+            children.todayView = new TodayViewUI(date, day);
+            children.todayView.render(node);
         }
 
         function renderCalendarView (date) {
-            var calendarView = new CalendarViewUI(date);
-            calendarView.render(node);
+            children.calendarView = new CalendarViewUI(date);
+            children.calendarView.render(node);
+            children.calendarView.highlightSelectedDate(date.date);
         }
 
         function renderSubComponents (date) {
-            renderTodaysView(currentDate.date, currentDate.day);
+            renderTodaysView(date.date, date.day);
             renderCalendarView(date);
         }
 
-        function refreshTodaysView (date, day) {
-            var existingView = node.querySelector(".today-view");
-            node.removeChild(existingView);
-            renderTodaysView(date, day);
-        }
-
-        function refreshCalendarView (date) {
-            var existingView = node.querySelector(".calendar-view");
-            node.removeChild(existingView);
-            renderCalendarView(date);
-        }
-
-        function refresh (date) {
-            refreshTodaysView(date.date, date.day);
-            refreshCalendarView(date);
-        }
-
-        function getSelectedDate (date) {
-            var d = new Date(currentDate.year, currentDate.month, date);
-            currentDate.date = date;
+        function getSelectedDate (selectedDate) {
+            var d = new Date(currentDate.year, currentDate.month, selectedDate);
+            currentDate.date = selectedDate;
             currentDate.day = d.getDay();
         }
 
@@ -290,24 +331,33 @@
             }
         }
 
-        function deleteCurrentDate () {
-            currentDate.date = null;
+        function updateTodayView () {
+            children.todayView.update(currentDate.date, currentDate.day);
+        }
+
+        function highlightSelectedDate () {
+            children.calendarView.highlightSelectedDate(currentDate.date);
+        }
+
+        function updateCalendarMonth () {
+            children.calendarView.update(currentDate);
         }
 
         function addCalendarEventManager () {
             node.addEventListener("click", function (ev) {
                 if (isValidDateElement(ev.target)) {
                     getSelectedDate(Number(ev.target.textContent));
-                    refresh(currentDate);
+                    updateTodayView();
+                    highlightSelectedDate();
                 } else if (isPrevButton(ev.target)) {
                     calculatePrevMonth();
-                    deleteCurrentDate();
-                    refreshCalendarView(currentDate);
+                    updateCalendarMonth();
                 } else if (isNextButton(ev.target)) {
                     calculateNextMonth();
-                    deleteCurrentDate();
-                    refreshCalendarView(currentDate);
+                    updateCalendarMonth();
                 }
+
+                ev.stopPropagation();
             });
         }
 
