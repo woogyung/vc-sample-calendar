@@ -2,7 +2,7 @@
     "use strict";
 
     function renderCalendar () {
-        var calendar = new Calendar();
+        var calendar = new CalendarUI();
         calendar.render(document.body);
     }
 

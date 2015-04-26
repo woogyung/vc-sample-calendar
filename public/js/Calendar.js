@@ -82,7 +82,7 @@
     }
 
     // Today View Constructor
-    function TodayView (currentDate) {
+    function TodayViewUI (currentDate) {
         var node = createElementWithClass("today-view");
 
         function renderTemplate () {
@@ -100,7 +100,7 @@
     }
 
     // Calendar View Header Constructor
-    function CalendarViewHeader (currentDate) {
+    function CalendarViewHeaderUI (currentDate) {
         var node = createElementWithClass("header");
 
         function renderTemplate () {
@@ -119,7 +119,7 @@
     }
 
     // Calendar Days View Constructor
-    function CalendarDaysView () {
+    function CalendarDaysViewUI () {
         var node = createTableElementWithClass("days");
 
         function renderTemplate () {
@@ -140,18 +140,18 @@
     }
 
     // Calendar Dates View Constructor
-    function CalendarDatesView (currentDate) {
+    function CalendarDatesViewUI (currentDate) {
         var node = createElementWithClass("calendar-table");
 
-        function generateTemplate () {
-            var template = "<table><tbody><tr>";
-            var firstDayOfMonth = getFirstDayOfMonth(currentDate.year, currentDate.month);
-            var lastDateOfMonth = getLastDateOfMonth(currentDate.month);
-
+        function addEmptyCell (template, firstDayOfMonth) {
             for (var i = 0; i < firstDayOfMonth; i++) {
                 template += "<td></td>";
             }
+            return template;
+        }
 
+        function addValidDateCell (template, firstDayOfMonth) {
+            var lastDateOfMonth = getLastDateOfMonth(currentDate.month);
             for (var j = 1; j <= lastDateOfMonth; j++) {
                 if (j === currentDate.date) {
                     template += ("<td class='selected'>" + j + "</td>");
@@ -163,7 +163,14 @@
                     template += "</tr><tr>";
                 }
             }
+            return template;
+        }
 
+        function generateTemplate () {
+            var template = "<table><tbody><tr>";
+            var firstDayOfMonth = getFirstDayOfMonth(currentDate.year, currentDate.month);
+            template = addEmptyCell(template, firstDayOfMonth);
+            template = addValidDateCell(template, firstDayOfMonth);
             template += "</tr></tbody></table>";
             return template;
         }
@@ -180,21 +187,21 @@
     }
 
     // Calendar View Constructor
-    function CalendarView (currentDate) {
+    function CalendarViewUI (currentDate) {
         var node = createElementWithClass("calendar-view");
 
         function renderHeader () {
-            var headerView = new CalendarViewHeader(currentDate);
+            var headerView = new CalendarViewHeaderUI(currentDate);
             headerView.render(node);
         }
 
         function renderDays () {
-            var calendarDaysView = new CalendarDaysView();
+            var calendarDaysView = new CalendarDaysViewUI();
             calendarDaysView.render(node);
         }
 
         function renderDates () {
-            var calendarDatesView = new CalendarDatesView(currentDate);
+            var calendarDatesView = new CalendarDatesViewUI(currentDate);
             calendarDatesView.render(node);
         }
 
@@ -211,7 +218,7 @@
     }
 
     // Top Level Calendar Constructor
-    function Calendar () {
+    function CalendarUI () {
         var node = createElementWithClass("calendar");
         var date = new Date();
         var currentDate = {
@@ -222,12 +229,12 @@
         };
 
         function renderTodaysView () {
-            var todayView = new TodayView(currentDate);
+            var todayView = new TodayViewUI(currentDate);
             todayView.render(node);
         }
 
         function renderCalendarView () {
-            var calendarView = new CalendarView(currentDate);
+            var calendarView = new CalendarViewUI(currentDate);
             calendarView.render(node);
         }
 
@@ -242,5 +249,5 @@
         };
     }
 
-    window.Calendar = Calendar;
+    window.CalendarUI = CalendarUI;
 })();
